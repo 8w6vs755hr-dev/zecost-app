@@ -208,8 +208,7 @@ textarea { resize: vertical; min-height: 70px; }
     <div class="card" id="o-fallback" hidden>
       <strong data-t="fbTitle"></strong>
       <span class="note" data-t="fbText"></span>
-      <div class="copybox" id="o-copy"></div>
-      <button class="btn navy" type="button" id="o-copybtn" data-t="copy"></button>
+      <a class="btn primary" id="o-tglink" href="https://t.me/Zecoast_bot" target="_blank" rel="noopener" data-t="fbBtn"></a>
     </div>
   </section>
 
@@ -280,8 +279,9 @@ const T = {
     send: 'Отправить заявку', orderNote: 'Оценщик свяжется с вами и скажет, какие документы нужны. Цена оценки зависит от объёма работы, а не от стоимости объекта.',
     errName: 'Укажите имя.', errPhone: 'Укажите телефон, чтобы оценщик мог позвонить.',
     doneTitle: 'Заявка отправлена', doneText: 'Оценщик свяжется с вами в рабочее время.',
-    fbTitle: 'Отправьте заявку в чат', fbText: 'Приложение открыто не из бота, поэтому заявка не ушла автоматически. Скопируйте текст и отправьте его в @Zecoast_bot или позвоните нам.',
-    copy: 'Скопировать текст', copied: 'Скопировано',
+    fbTitle: 'Последний шаг', fbText: 'Нажмите кнопку — откроется чат @Zecoast_bot с вашей заявкой. Нажмите в нём «Старт», и заявка уйдёт оценщику.',
+    fbBtn: 'Отправить заявку в Telegram',
+    linkTitle: 'Откройте чат с ботом', linkText: 'Сейчас откроется @Zecoast_bot. Нажмите «Старт» — и заявка уйдёт оценщику.',
     pricesTitle: 'Услуги и цены', pricesNote: 'Цены без НДС, в БРВ на дату договора. Срочно и выезд за город — по договорённости.',
     contacts: 'Контакты', cert: 'Сертификат № 0013 от 16.05.2024 · ответственность застрахована',
     types: { flat: 'Квартира', house: 'Дом', car: 'Авто', nonres: 'Нежилое', land: 'Земля', biz: 'Бизнес', other: 'Другое' },
@@ -313,8 +313,9 @@ const T = {
     send: 'Arizani yuborish', orderNote: 'Baholovchi siz bilan bog‘lanib, qaysi hujjatlar kerakligini aytadi. Baholash narxi ish hajmiga bog‘liq, obyekt qiymatiga emas.',
     errName: 'Ismingizni kiriting.', errPhone: 'Baholovchi qo‘ng‘iroq qilishi uchun telefon raqamini kiriting.',
     doneTitle: 'Ariza yuborildi', doneText: 'Baholovchi ish vaqtida siz bilan bog‘lanadi.',
-    fbTitle: 'Arizani chatga yuboring', fbText: 'Ilova botdan ochilmagan, shuning uchun ariza avtomatik yuborilmadi. Matnni nusxalab @Zecoast_bot ga yuboring yoki bizga qo‘ng‘iroq qiling.',
-    copy: 'Matnni nusxalash', copied: 'Nusxalandi',
+    fbTitle: 'Oxirgi qadam', fbText: 'Tugmani bosing — arizangiz bilan @Zecoast_bot chati ochiladi. Unda «Start» ni bosing, ariza baholovchiga yuboriladi.',
+    fbBtn: 'Arizani Telegramga yuborish',
+    linkTitle: 'Bot chatini oching', linkText: 'Hozir @Zecoast_bot ochiladi. «Start» ni bosing — ariza baholovchiga yuboriladi.',
     pricesTitle: 'Xizmatlar va narxlar', pricesNote: 'Narxlar QQSsiz, shartnoma sanasidagi BHMda. Shoshilinch va shahar tashqarisiga chiqish — kelishuv asosida.',
     contacts: 'Kontaktlar', cert: 'Sertifikat № 0013, 16.05.2024 · javobgarlik sug‘urtalangan',
     types: { flat: 'Kvartira', house: 'Hovli', car: 'Avto', nonres: 'Noturar', land: 'Yer', biz: 'Biznes', other: 'Boshqa' },
@@ -346,8 +347,9 @@ const T = {
     send: 'Send request', orderNote: 'An appraiser will contact you and list the documents needed. The fee depends on the work, not on the value of the property.',
     errName: 'Enter your name.', errPhone: 'Enter a phone number so the appraiser can call you.',
     doneTitle: 'Request sent', doneText: 'An appraiser will contact you during working hours.',
-    fbTitle: 'Send the request in chat', fbText: 'The app was not opened from the bot, so the request was not sent automatically. Copy the text and send it to @Zecoast_bot, or call us.',
-    copy: 'Copy text', copied: 'Copied',
+    fbTitle: 'Last step', fbText: 'Tap the button to open @Zecoast_bot with your request. Tap “Start” there and it goes to an appraiser.',
+    fbBtn: 'Send request in Telegram',
+    linkTitle: 'Open the bot chat', linkText: '@Zecoast_bot is opening. Tap “Start” and your request goes to an appraiser.',
     pricesTitle: 'Services and prices', pricesNote: 'Prices exclude VAT, in BCA (base calculation amount) on the contract date. Urgent work and trips outside the city by agreement.',
     contacts: 'Contacts', cert: 'Certificate No. 0013 of 16.05.2024 · liability insured',
     types: { flat: 'Flat', house: 'House', car: 'Car', nonres: 'Commercial', land: 'Land', biz: 'Business', other: 'Other' },
@@ -362,7 +364,11 @@ const T = {
 
 /* ---------- Telegram ---------- */
 const tg = window.Telegram && window.Telegram.WebApp;
-const inTelegram = !!(tg && tg.initData);
+/* Внутри Telegram platform != 'unknown'. Открыто кнопкой под полем ввода → initData пустой и работает sendData.
+   Открыто из «Меню» или по ссылке → sendData недоступен, заявку передаём ссылкой t.me/<бот>?start=... */
+const BOT_USERNAME = 'Zecoast_bot';
+const inTelegram = !!(tg && tg.platform && tg.platform !== 'unknown');
+const viaKeyboard = inTelegram && !tg.initData;
 if (tg) { try { tg.ready(); tg.expand(); if (tg.colorScheme) document.documentElement.setAttribute('data-theme', tg.colorScheme); } catch (e) {} }
 
 /* ---------- state ---------- */
@@ -476,6 +482,19 @@ $('c-order').addEventListener('click', () => {
 });
 
 /* ---------- order ---------- */
+/* Короткая заявка для ссылки t.me/<бот>?start=... (не длиннее 64 символов: A-Z a-z 0-9 _ -) */
+function b64url(str) {
+  const bytes = new TextEncoder().encode(str); let bin = '';
+  bytes.forEach(b => { bin += String.fromCharCode(b); });
+  return btoa(bin).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+}
+function startPayload(lead) {
+  const head = 'ma' + ({ ru: 'r', uz: 'u', en: 'e' }[lang] || 'r') + Object.keys(T.ru.types).indexOf(objType)
+    + $('o-purpose').value + lead.phone.replace(/\D/g, '').slice(-12) + '-';
+  let name = lead.name, enc = b64url(name);
+  while (name && head.length + enc.length > 64) { name = name.slice(0, -1); enc = b64url(name); }
+  return head + enc;
+}
 $('o-form').addEventListener('submit', e => {
   e.preventDefault();
   const name = $('o-name').value.trim(), phone = $('o-phone').value.trim(), err = $('o-err');
@@ -483,18 +502,20 @@ $('o-form').addEventListener('submit', e => {
   if (phone.replace(/\D/g, '').length < 9) { err.textContent = t('errPhone'); err.hidden = false; $('o-phone').focus(); return; }
   err.hidden = true;
   const lead = { kind: 'lead', lang, object: T.ru.types[objType], purpose: T.ru.purposes[$('o-purpose').value], name, phone, comment: $('o-comment').value.trim() };
-  let sent = false;
-  if (inTelegram && typeof tg.sendData === 'function') { try { tg.sendData(JSON.stringify(lead)); sent = true; } catch (x) { sent = false; } }
   $('o-form').hidden = true;
-  if (sent) { $('o-done').hidden = false; return; }
-  $('o-copy').textContent = `Заявка ZeCost\nОбъект: ${T.ru.types[objType]}\nЦель: ${lead.purpose}\nИмя: ${name}\nТелефон: ${phone}` + (lead.comment ? `\n${lead.comment}` : '');
+  if (viaKeyboard) {
+    try { tg.sendData(JSON.stringify(lead)); $('o-done').hidden = false; return; } catch (x) { /* ниже — ссылка */ }
+  }
+  const link = 'https://t.me/' + BOT_USERNAME + '?start=' + startPayload(lead);
+  $('o-tglink').href = link;
+  if (inTelegram) {
+    $('o-fallback').querySelector('[data-t="fbTitle"]').textContent = t('linkTitle');
+    $('o-fallback').querySelector('[data-t="fbText"]').textContent = t('linkText');
+    $('o-fallback').hidden = false;
+    try { tg.openTelegramLink(link); } catch (x) { /* остаётся кнопка */ }
+    return;
+  }
   $('o-fallback').hidden = false;
-});
-$('o-copybtn').addEventListener('click', () => {
-  const txt = $('o-copy').textContent, btn = $('o-copybtn');
-  const done = () => { btn.textContent = t('copied'); };
-  try { navigator.clipboard.writeText(txt).then(done, () => selectCopy()); } catch (e) { selectCopy(); }
-  function selectCopy() { const r = document.createRange(); r.selectNodeContents($('o-copy')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
 });
 
 render();
