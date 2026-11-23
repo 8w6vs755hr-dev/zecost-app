@@ -1,0 +1,504 @@
+<!doctype html>
+<html lang="ru"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>html{color-scheme:light}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>ZeCost Mini App</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=Prata&display=swap">
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<style>
+/* Layout: one narrow column like a Telegram screen — brand bar, then one view at a time (home / flat / car / order / prices). */
+:root {
+  --bg: #F5F6FA;          /* screen ground, cool off-white */
+  --card: #FFFFFF;
+  --ink: #14213D;         /* navy text */
+  --muted: #5B6478;
+  --line: #E2E5EE;
+  --navy: #1F3864;        /* brand navy */
+  --gold: #B8962E;        /* brand gold */
+  --gold-soft: #F3ECD7;
+  --on-navy: #FFFFFF;
+  --good: #2E7D4F;
+  --font-ui: "Manrope", "Segoe UI", system-ui, sans-serif;
+  --font-brand: "Prata", Georgia, "Times New Roman", serif;
+}
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) {
+  --bg: #0E1424; --card: #172036; --ink: #EEF1F8; --muted: #A3ABC0; --line: #283350;
+  --navy: #2B4A80; --gold: #D4B45A; --gold-soft: #2E2A1D; --on-navy: #FFFFFF; --good: #6FCB94; color-scheme: dark } }
+:root[data-theme="dark"] {
+  --bg: #0E1424; --card: #172036; --ink: #EEF1F8; --muted: #A3ABC0; --line: #283350;
+  --navy: #2B4A80; --gold: #D4B45A; --gold-soft: #2E2A1D; --on-navy: #FFFFFF; --good: #6FCB94; color-scheme: dark }
+
+* { box-sizing: border-box; }
+body { background: var(--bg); color: var(--ink); font-family: var(--font-ui); font-size: 15px; line-height: 1.45;
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); padding-block: 12px 28px; }
+.wrap { max-width: 520px; margin: 0 auto; display: grid; gap: 14px; }
+
+/* brand bar */
+.brand { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding-block: 4px 2px; }
+.brand .mark { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.brand b { font-family: var(--font-brand); font-weight: 400; font-size: 26px; letter-spacing: .01em; color: var(--ink); }
+.brand b span { color: var(--gold); }
+.langs { display: flex; gap: 2px; background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 3px; }
+.langs button { border: 0; background: none; color: var(--muted); font: 600 12px var(--font-ui); padding: 5px 9px; border-radius: 999px; cursor: pointer; letter-spacing: .04em; }
+.langs button[aria-pressed="true"] { background: var(--navy); color: var(--on-navy); }
+.slogan { margin: -6px 0 2px; font-size: 13px; color: var(--gold); font-style: italic; }
+
+/* hero card */
+.hero { background: var(--navy); color: var(--on-navy); border-radius: 18px; padding: 20px 18px; display: grid; gap: 8px; position: relative; overflow: hidden; }
+.hero::after { content: ""; position: absolute; right: -56px; bottom: -70px; width: 150px; height: 150px; border-radius: 50%; border: 18px solid var(--gold); opacity: .22; }
+.hero h1 { margin: 0; font-size: 22px; line-height: 1.2; font-weight: 800; text-wrap: balance; max-width: 26ch; }
+.hero p { margin: 0; opacity: .85; font-size: 14px; max-width: 34ch; }
+
+/* action list */
+.actions { display: grid; gap: 10px; }
+.act { display: grid; grid-template-columns: 44px 1fr 16px; align-items: center; gap: 12px; width: 100%; text-align: left; background: var(--card); color: var(--ink);
+  border: 1px solid var(--line); border-radius: 14px; padding: 14px; cursor: pointer; font: inherit; }
+.act:focus-visible, button:focus-visible, select:focus-visible, input:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+.act .ic { width: 44px; height: 44px; border-radius: 12px; background: var(--gold-soft); display: grid; place-items: center; }
+.act .ic svg { width: 24px; height: 24px; stroke: var(--gold); fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.act strong { display: block; font-size: 15px; }
+.act small { display: block; color: var(--muted); font-size: 13px; }
+.act .chev { color: var(--muted); font-size: 20px; }
+
+/* sections */
+.view { display: grid; gap: 14px; }
+.head { display: flex; align-items: center; gap: 10px; }
+.back { border: 1px solid var(--line); background: var(--card); color: var(--ink); width: 36px; height: 36px; border-radius: 10px; cursor: pointer; font-size: 18px; flex: none; }
+.head h2 { margin: 0; font-size: 19px; font-weight: 800; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: grid; gap: 12px; min-width: 0; }
+.row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+label { display: grid; gap: 5px; font-size: 13px; font-weight: 600; color: var(--muted); min-width: 0; }
+input, select, textarea { width: 100%; font: 500 15px var(--font-ui); color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 10px; padding: 11px 12px; }
+textarea { resize: vertical; min-height: 70px; }
+.field { display: grid; gap: 6px; min-width: 0; }
+.flabel { font-size: 13px; font-weight: 600; color: var(--muted); }
+.seg { display: flex; flex-wrap: wrap; gap: 6px; }
+.seg button { border: 1px solid var(--line); background: var(--bg); color: var(--ink); font: 600 13px var(--font-ui); padding: 8px 12px; border-radius: 999px; cursor: pointer; }
+.seg button[aria-pressed="true"] { background: var(--navy); border-color: var(--navy); color: var(--on-navy); }
+
+.btn { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; border: 0; border-radius: 12px; padding: 14px; font: 700 15px var(--font-ui); cursor: pointer; text-decoration: none; }
+.btn.primary { background: var(--gold); color: #1A1406; }
+.btn.navy { background: var(--navy); color: var(--on-navy); }
+.btn.ghost { background: transparent; color: var(--ink); border: 1px solid var(--line); }
+.btns { display: grid; gap: 8px; }
+
+/* result */
+.result { border: 1.5px solid var(--gold); background: var(--gold-soft); border-radius: 16px; padding: 16px; display: grid; gap: 6px; }
+.result .tag { font-size: 11px; font-weight: 800; letter-spacing: .12em; text-transform: uppercase; color: var(--gold); }
+.result .range { font-size: 26px; font-weight: 800; font-variant-numeric: tabular-nums; line-height: 1.15; }
+.result .per { font-size: 13px; color: var(--muted); font-variant-numeric: tabular-nums; }
+.note { font-size: 12.5px; color: var(--muted); }
+.note b { color: var(--ink); font-weight: 600; }
+
+/* price list */
+.plist { display: grid; }
+.plist div { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.plist div:last-child { border-bottom: 0; }
+.plist span:last-child { font-weight: 700; white-space: nowrap; font-variant-numeric: tabular-nums; }
+
+.contacts { display: grid; gap: 8px; font-size: 14px; }
+.contacts .num { font-weight: 700; font-variant-numeric: tabular-nums; user-select: all; }
+.ok { display: grid; gap: 8px; text-align: center; padding: 8px 0; }
+.ok .big { font-size: 40px; color: var(--good); }
+.copybox { white-space: pre-wrap; font-size: 13px; background: var(--bg); border: 1px dashed var(--line); border-radius: 10px; padding: 10px; user-select: all; }
+.foot { text-align: center; font-size: 12px; color: var(--muted); }
+@media (prefers-reduced-motion: no-preference) { .view { animation: in .18s ease-out; } @keyframes in { from { transform: translateY(6px); } to { transform: none; } } }
+</style>
+</head><body>
+
+<div class="wrap">
+  <div class="brand">
+    <div class="mark"><b>Ze<span>C</span>ost</b></div>
+    <div class="langs" role="group" aria-label="Language">
+      <button type="button" data-lang="ru" id="lang-ru">RU</button>
+      <button type="button" data-lang="uz" id="lang-uz">UZ</button>
+      <button type="button" data-lang="en" id="lang-en">EN</button>
+    </div>
+  </div>
+  <p class="slogan" data-t="slogan"></p>
+
+  <!-- HOME -->
+  <section class="view" id="v-home">
+    <div class="hero">
+      <h1 data-t="heroTitle"></h1>
+      <p data-t="heroText"></p>
+    </div>
+    <div class="actions">
+      <button class="act" type="button" data-go="flat" id="go-flat">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M4 21V9l8-5 8 5v12"/><path d="M9 21v-6h6v6"/></svg></span>
+        <span><strong data-t="actFlat"></strong><small data-t="actFlatSub"></small></span><span class="chev">›</span>
+      </button>
+      <button class="act" type="button" data-go="car" id="go-car">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M3 16v-3l2-5h14l2 5v3"/><path d="M3 16h18"/><circle cx="7.5" cy="17.5" r="1.8"/><circle cx="16.5" cy="17.5" r="1.8"/></svg></span>
+        <span><strong data-t="actCar"></strong><small data-t="actCarSub"></small></span><span class="chev">›</span>
+      </button>
+      <button class="act" type="button" data-go="order" id="go-order">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M7 3h7l5 5v13H7z"/><path d="M14 3v5h5"/><path d="M10 13h6M10 17h4"/></svg></span>
+        <span><strong data-t="actOrder"></strong><small data-t="actOrderSub"></small></span><span class="chev">›</span>
+      </button>
+      <button class="act" type="button" data-go="prices" id="go-prices">
+        <span class="ic"><svg viewBox="0 0 24 24"><path d="M20 12l-8 8-8-8V4h8z"/><circle cx="8.5" cy="8.5" r="1.5"/></svg></span>
+        <span><strong data-t="actPrices"></strong><small data-t="actPricesSub"></small></span><span class="chev">›</span>
+      </button>
+    </div>
+    <p class="foot" data-t="foot"></p>
+  </section>
+
+  <!-- FLAT -->
+  <section class="view" id="v-flat" hidden>
+    <div class="head"><button class="back" type="button" data-go="home" aria-label="Back">‹</button><h2 data-t="flatTitle"></h2></div>
+    <div class="card">
+      <label><span data-t="district"></span><select id="f-district"></select></label>
+      <div class="row">
+        <label><span data-t="area"></span><input id="f-area" type="number" inputmode="decimal" min="10" max="500" value="65"></label>
+        <label><span data-t="rooms"></span><select id="f-rooms"><option>1</option><option selected>2</option><option>3</option><option>4</option><option value="5">5+</option></select></label>
+      </div>
+      <button class="btn navy" type="button" id="f-calc" data-t="calc"></button>
+    </div>
+    <div class="result" id="f-result" hidden>
+      <span class="tag" data-t="approx"></span>
+      <span class="range" id="f-range"></span>
+      <span class="per" id="f-per"></span>
+      <span class="note" id="f-basis"></span>
+    </div>
+    <div class="btns" id="f-after" hidden>
+      <a class="btn ghost" id="f-olx" href="https://uybor.uz/listings?operationType__eq=sale&amp;category__eq=7&amp;region__eq=13" target="_blank" rel="noopener" data-t="seeOlx"></a>
+      <button class="btn primary" type="button" id="f-order" data-t="orderExact"></button>
+    </div>
+    <p class="note" data-t="flatNote"></p>
+  </section>
+
+  <!-- CAR -->
+  <section class="view" id="v-car" hidden>
+    <div class="head"><button class="back" type="button" data-go="home" aria-label="Back">‹</button><h2 data-t="carTitle"></h2></div>
+    <div class="card">
+      <label><span data-t="make"></span><select id="c-make">
+        <option value="chevrolet">Chevrolet</option><option value="byd">BYD</option><option value="kia">Kia</option>
+        <option value="hyundai">Hyundai</option><option value="toyota">Toyota</option><option value="vaz">Lada</option>
+        <option value="daewoo">Daewoo</option><option value="chery">Chery</option><option value="other" data-t="otherMake"></option></select></label>
+      <div class="field" id="c-model-field"><span class="flabel" data-t="model"></span><div class="seg" id="c-models" role="group"></div></div>
+      <div class="row">
+        <label><span data-t="year"></span><input id="c-year" type="number" inputmode="numeric" min="1990" max="2026" value="2022"></label>
+        <label><span data-t="mileage"></span><input id="c-km" type="number" inputmode="numeric" min="0" value="60000"></label>
+      </div>
+      <a class="btn navy" id="c-olx" href="https://avtoelon.uz/avto/" target="_blank" rel="noopener" data-t="seeOlxCar"></a>
+      <button class="btn primary" type="button" id="c-order" data-t="carOrder"></button>
+    </div>
+    <p class="note" data-t="carNote"></p>
+  </section>
+
+  <!-- ORDER -->
+  <section class="view" id="v-order" hidden>
+    <div class="head"><button class="back" type="button" data-go="home" aria-label="Back">‹</button><h2 data-t="orderTitle"></h2></div>
+    <form class="card" id="o-form" novalidate>
+      <label><span data-t="objType"></span><div class="seg" id="o-type" role="group"></div></label>
+      <label><span data-t="purpose"></span><select id="o-purpose"></select></label>
+      <label><span data-t="name"></span><input id="o-name" type="text" autocomplete="name" required></label>
+      <label><span data-t="phone"></span><input id="o-phone" type="tel" autocomplete="tel" placeholder="+998 90 123 45 67" required></label>
+      <label><span data-t="comment"></span><textarea id="o-comment"></textarea></label>
+      <p class="note" id="o-err" hidden></p>
+      <button class="btn primary" type="submit" id="o-send" data-t="send"></button>
+      <p class="note" data-t="orderNote"></p>
+    </form>
+    <div class="card" id="o-done" hidden>
+      <div class="ok"><span class="big">✓</span><strong data-t="doneTitle"></strong><span class="note" data-t="doneText"></span></div>
+    </div>
+    <div class="card" id="o-fallback" hidden>
+      <strong data-t="fbTitle"></strong>
+      <span class="note" data-t="fbText"></span>
+      <div class="copybox" id="o-copy"></div>
+      <button class="btn navy" type="button" id="o-copybtn" data-t="copy"></button>
+    </div>
+  </section>
+
+  <!-- PRICES -->
+  <section class="view" id="v-prices" hidden>
+    <div class="head"><button class="back" type="button" data-go="home" aria-label="Back">‹</button><h2 data-t="pricesTitle"></h2></div>
+    <div class="card"><div class="plist" id="p-list"></div><p class="note" data-t="pricesNote"></p></div>
+    <div class="card contacts">
+      <strong data-t="contacts"></strong>
+      <span class="num">+998 77 664 11 33</span>
+      <span class="num">+998 77 664 11 44</span>
+      <span>Telegram: <span class="num">@Zecoast_bot</span></span>
+      <span class="note" data-t="cert"></span>
+    </div>
+    <button class="btn primary" type="button" data-go="order" data-t="actOrder"></button>
+  </section>
+</div>
+
+<script>
+/* ======================= НАСТРОЙКИ — меняйте здесь =======================
+   Средняя цена предложения квартир, млн сум за 1 м².
+   Источники: Нац. комитет по урбанизации и рынку жилья, на 01.09.2026 (oblako.uz, 17.09.2026);
+   Нац. центр массовой оценки недвижимости, на 01.07.2026 (zamin.uz).
+   city: true = данных по району нет, взята средняя по городу (16,5) — обновите, когда будут данные. */
+const AS_OF = '01.09.2026';
+const DISTRICTS = [
+  { id: 'shayx',  ru: 'Шайхантахурский', uz: 'Shayxontohur', en: 'Shaykhantakhur', p: 25.3, olx: 'шайхантахур' },
+  { id: 'mirab',  ru: 'Мирабадский',     uz: 'Mirobod',      en: 'Mirabad',        p: 23.2, olx: 'мирабад' },
+  { id: 'yakka',  ru: 'Яккасарайский',   uz: 'Yakkasaroy',   en: 'Yakkasaray',     p: 20.5, olx: 'яккасарай' },
+  { id: 'mirzo',  ru: 'Мирзо-Улугбекский', uz: 'Mirzo Ulug‘bek', en: 'Mirzo-Ulugbek', p: 19.6, olx: 'мирзо улугбек' },
+  { id: 'yunus',  ru: 'Юнусабадский',    uz: 'Yunusobod',    en: 'Yunusabad',      p: 17.0, olx: 'юнусабад' },
+  { id: 'chil',   ru: 'Чиланзарский',    uz: 'Chilonzor',    en: 'Chilanzar',      p: 16.5, city: true, olx: 'чиланзар' },
+  { id: 'olmaz',  ru: 'Алмазарский',     uz: 'Olmazor',      en: 'Almazar',        p: 16.5, city: true, olx: 'алмазар' },
+  { id: 'uchte',  ru: 'Учтепинский',     uz: 'Uchtepa',      en: 'Uchtepa',        p: 16.5, city: true, olx: 'учтепа' },
+  { id: 'yashn',  ru: 'Яшнабадский',     uz: 'Yashnobod',    en: 'Yashnabad',      p: 16.5, city: true, olx: 'яшнабад' },
+  { id: 'serge',  ru: 'Сергелийский',    uz: 'Sergeli',      en: 'Sergeli',        p: 11.5, olx: 'сергели' },
+  { id: 'bekte',  ru: 'Бектемирский',    uz: 'Bektemir',     en: 'Bektemir',       p: 11.5, olx: 'бектемир' },
+  { id: 'yangi',  ru: 'Янгихаётский',    uz: 'Yangihayot',   en: 'Yangihayot',     p: 11.0, olx: 'янгихаёт' },
+];
+const BARGAIN = 0.05;   // скидка на торг: цены объявлений выше цен сделок
+const SPREAD  = 0.15;   // разброс ±15% — состояние, этаж, дом, ремонт
+/* Прайс (из прайса ООО «FB BUSINESS CONSULTANTS»), в БРВ, без НДС */
+const PRICES = [
+  ['pCar', 'от 1 БРВ'], ['pEquip', 'от 1,5 БРВ'], ['pFlat', 'от 2 БРВ'], ['pSpec', 'от 2 БРВ'],
+  ['pNonres', 'от 3 БРВ'], ['pLand', 'от 4 БРВ'], ['pPlan', 'от 4 БРВ'], ['pBiz', 'от 45 БРВ'],
+];
+/* ========================================================================= */
+
+const T = {
+  ru: {
+    slogan: 'Всё имеет цену. Мы знаем точную.',
+    heroTitle: 'Узнайте ориентир цены за минуту', heroText: 'Квартира или автомобиль: ориентир и похожие объявления. Точную стоимость даст отчёт сертифицированного оценщика.',
+    actFlat: 'Квартира', actFlatSub: 'Ориентир цены по району и площади',
+    actCar: 'Автомобиль', actCarSub: 'Похожие объявления по марке и году',
+    actOrder: 'Заказать оценку', actOrderSub: 'Залог, продажа, наследство, суд',
+    actPrices: 'Услуги и цены', actPricesSub: 'Прайс и контакты',
+    foot: 'ООО «FB BUSINESS CONSULTANTS» · сертификат № 0013 от 16.05.2024',
+    flatTitle: 'Квартира в Ташкенте', district: 'Район', area: 'Площадь, м²', rooms: 'Комнат', calc: 'Рассчитать ориентир',
+    approx: 'Ориентировочно', seeOlx: 'Похожие объявления на Uybor', orderExact: 'Заказать точную оценку',
+    perM2: 'около {p} млн сум за м² с учётом торга',
+    basis: 'Основа: средняя цена объявлений в районе на {d}, минус {b}% на торг, разброс ±{s}%.',
+    basisCity: 'По этому району нет отдельных данных — взята средняя цена по Ташкенту на 01.07.2026, минус {b}% на торг, разброс ±{s}%.',
+    flatNote: 'Это не отчёт об оценке. Реальная цена зависит от дома, этажа, ремонта и документов. Для банка, нотариуса и суда нужен отчёт оценщика.',
+    carTitle: 'Автомобиль', make: 'Марка', model: 'Модель', year: 'Год выпуска', mileage: 'Пробег, км', otherMake: 'Другая', allModels: 'Все модели',
+    seeOlxCar: 'Похожие объявления на Avtoelon', carOrder: 'Получить ориентир от оценщика',
+    carNote: 'Цены в объявлениях выше цен сделок. Комплектация, пробег и состояние меняют стоимость, поэтому точный ориентир даст оценщик.',
+    orderTitle: 'Заявка на оценку', objType: 'Что оцениваем', purpose: 'Для чего', name: 'Имя', phone: 'Телефон', comment: 'Комментарий',
+    send: 'Отправить заявку', orderNote: 'Оценщик свяжется с вами и скажет, какие документы нужны. Цена оценки зависит от объёма работы, а не от стоимости объекта.',
+    errName: 'Укажите имя.', errPhone: 'Укажите телефон, чтобы оценщик мог позвонить.',
+    doneTitle: 'Заявка отправлена', doneText: 'Оценщик свяжется с вами в рабочее время.',
+    fbTitle: 'Отправьте заявку в чат', fbText: 'Приложение открыто не из бота, поэтому заявка не ушла автоматически. Скопируйте текст и отправьте его в @Zecoast_bot или позвоните нам.',
+    copy: 'Скопировать текст', copied: 'Скопировано',
+    pricesTitle: 'Услуги и цены', pricesNote: 'Цены без НДС, в БРВ на дату договора. Срочно и выезд за город — по договорённости.',
+    contacts: 'Контакты', cert: 'Сертификат № 0013 от 16.05.2024 · ответственность застрахована',
+    types: { flat: 'Квартира', house: 'Дом', car: 'Авто', nonres: 'Нежилое', land: 'Земля', biz: 'Бизнес', other: 'Другое' },
+    purposes: ['Залог в банке', 'Продажа / покупка', 'Наследство', 'Суд', 'Налог', 'Баланс / МСФО', 'Ущерб', 'Другое'],
+    pCar: 'Легковой автомобиль', pEquip: 'Оборудование', pFlat: 'Квартира', pSpec: 'Спецтехника', pNonres: 'Нежилое помещение, здание',
+    pLand: 'Земельный участок', pPlan: 'Бизнес-план, ТЭО', pBiz: 'Бизнес, акции, доли',
+    bln: 'млрд', mln: 'млн', sum: 'сум', from: 'от', to: 'до',
+    carMsg: 'Ориентир по автомобилю: {m} {mo}, {y} г., пробег {k} км',
+    flatMsg: 'Квартира: {d} р-н, {a} м², {r} комн. Ориентир {res}',
+  },
+  uz: {
+    slogan: 'Hamma narsaning narxi bor. Biz aniqini bilamiz.',
+    heroTitle: 'Taxminiy narxni bir daqiqada bilib oling', heroText: 'Kvartira yoki avtomobil: taxminiy narx va o‘xshash e’lonlar. Aniq qiymatni sertifikatlangan baholovchi hisoboti beradi.',
+    actFlat: 'Kvartira', actFlatSub: 'Tuman va maydon bo‘yicha taxminiy narx',
+    actCar: 'Avtomobil', actCarSub: 'Marka va yil bo‘yicha o‘xshash e’lonlar',
+    actOrder: 'Baholashga buyurtma', actOrderSub: 'Garov, sotish, meros, sud',
+    actPrices: 'Xizmatlar va narxlar', actPricesSub: 'Narxlar va kontaktlar',
+    foot: '«FB BUSINESS CONSULTANTS» MChJ · sertifikat № 0013, 16.05.2024',
+    flatTitle: 'Toshkentdagi kvartira', district: 'Tuman', area: 'Maydon, m²', rooms: 'Xonalar', calc: 'Taxminiy narxni hisoblash',
+    approx: 'Taxminiy', seeOlx: 'Uybor’dagi o‘xshash e’lonlar', orderExact: 'Aniq baholashga buyurtma',
+    perM2: 'savdolashuvni hisobga olgan holda m² uchun taxminan {p} mln so‘m',
+    basis: 'Asos: {d} holatiga tumandagi e’lonlarning o‘rtacha narxi, savdolashuvga {b}% chegirma, ±{s}% oraliq.',
+    basisCity: 'Bu tuman bo‘yicha alohida ma’lumot yo‘q — 01.07.2026 holatiga Toshkent bo‘yicha o‘rtacha narx olindi, {b}% chegirma, ±{s}% oraliq.',
+    flatNote: 'Bu baholash hisoboti emas. Haqiqiy narx uy, qavat, ta’mir va hujjatlarga bog‘liq. Bank, notarius va sud uchun baholovchi hisoboti kerak.',
+    carTitle: 'Avtomobil', make: 'Marka', model: 'Model', year: 'Ishlab chiqarilgan yil', mileage: 'Yurgan masofa, km', otherMake: 'Boshqa', allModels: 'Barcha modellar',
+    seeOlxCar: 'Avtoelon’dagi o‘xshash e’lonlar', carOrder: 'Baholovchidan taxminiy narx olish',
+    carNote: 'E’lonlardagi narxlar bitim narxlaridan yuqori. Komplektatsiya, probeg va holat qiymatni o‘zgartiradi, aniq narxni baholovchi aytadi.',
+    orderTitle: 'Baholashga ariza', objType: 'Nimani baholaymiz', purpose: 'Maqsad', name: 'Ism', phone: 'Telefon', comment: 'Izoh',
+    send: 'Arizani yuborish', orderNote: 'Baholovchi siz bilan bog‘lanib, qaysi hujjatlar kerakligini aytadi. Baholash narxi ish hajmiga bog‘liq, obyekt qiymatiga emas.',
+    errName: 'Ismingizni kiriting.', errPhone: 'Baholovchi qo‘ng‘iroq qilishi uchun telefon raqamini kiriting.',
+    doneTitle: 'Ariza yuborildi', doneText: 'Baholovchi ish vaqtida siz bilan bog‘lanadi.',
+    fbTitle: 'Arizani chatga yuboring', fbText: 'Ilova botdan ochilmagan, shuning uchun ariza avtomatik yuborilmadi. Matnni nusxalab @Zecoast_bot ga yuboring yoki bizga qo‘ng‘iroq qiling.',
+    copy: 'Matnni nusxalash', copied: 'Nusxalandi',
+    pricesTitle: 'Xizmatlar va narxlar', pricesNote: 'Narxlar QQSsiz, shartnoma sanasidagi BHMda. Shoshilinch va shahar tashqarisiga chiqish — kelishuv asosida.',
+    contacts: 'Kontaktlar', cert: 'Sertifikat № 0013, 16.05.2024 · javobgarlik sug‘urtalangan',
+    types: { flat: 'Kvartira', house: 'Hovli', car: 'Avto', nonres: 'Noturar', land: 'Yer', biz: 'Biznes', other: 'Boshqa' },
+    purposes: ['Bankda garov', 'Sotish / sotib olish', 'Meros', 'Sud', 'Soliq', 'Balans / MHXS', 'Zarar', 'Boshqa'],
+    pCar: 'Yengil avtomobil', pEquip: 'Uskunalar', pFlat: 'Kvartira', pSpec: 'Maxsus texnika', pNonres: 'Noturar joy, bino',
+    pLand: 'Yer uchastkasi', pPlan: 'Biznes-reja, TIA', pBiz: 'Biznes, aksiyalar, ulushlar',
+    bln: 'mlrd', mln: 'mln', sum: 'so‘m', from: '', to: '–',
+    carMsg: 'Avtomobil bo‘yicha taxminiy narx: {m} {mo}, {y} y., probeg {k} km',
+    flatMsg: 'Kvartira: {d} tumani, {a} m², {r} xona. Taxminiy {res}',
+  },
+  en: {
+    slogan: 'Everything has a price. We know the exact one.',
+    heroTitle: 'Get a price guide in a minute', heroText: 'Flat or car: a price guide and similar listings. The exact value comes from a certified appraiser’s report.',
+    actFlat: 'Flat', actFlatSub: 'Price guide by district and size',
+    actCar: 'Car', actCarSub: 'Similar listings by make and year',
+    actOrder: 'Order a valuation', actOrderSub: 'Mortgage, sale, inheritance, court',
+    actPrices: 'Services and prices', actPricesSub: 'Price list and contacts',
+    foot: 'FB BUSINESS CONSULTANTS LLC · certificate No. 0013 of 16.05.2024',
+    flatTitle: 'Flat in Tashkent', district: 'District', area: 'Area, m²', rooms: 'Rooms', calc: 'Calculate guide',
+    approx: 'Approximate', seeOlx: 'Similar listings on Uybor', orderExact: 'Order an exact valuation',
+    perM2: 'about {p} mln UZS per m² after bargaining',
+    basis: 'Basis: average asking price in the district as of {d}, minus {b}% for bargaining, range ±{s}%.',
+    basisCity: 'No separate data for this district: Tashkent average as of 01.07.2026, minus {b}% for bargaining, range ±{s}%.',
+    flatNote: 'This is not a valuation report. The real price depends on the building, floor, renovation and documents. Banks, notaries and courts need an appraiser’s report.',
+    carTitle: 'Car', make: 'Make', model: 'Model', year: 'Year', mileage: 'Mileage, km', otherMake: 'Other', allModels: 'All models',
+    seeOlxCar: 'Similar listings on Avtoelon', carOrder: 'Get a guide from an appraiser',
+    carNote: 'Asking prices are higher than sale prices. Trim, mileage and condition change the value, so an appraiser gives the exact guide.',
+    orderTitle: 'Valuation request', objType: 'What to value', purpose: 'Purpose', name: 'Name', phone: 'Phone', comment: 'Comment',
+    send: 'Send request', orderNote: 'An appraiser will contact you and list the documents needed. The fee depends on the work, not on the value of the property.',
+    errName: 'Enter your name.', errPhone: 'Enter a phone number so the appraiser can call you.',
+    doneTitle: 'Request sent', doneText: 'An appraiser will contact you during working hours.',
+    fbTitle: 'Send the request in chat', fbText: 'The app was not opened from the bot, so the request was not sent automatically. Copy the text and send it to @Zecoast_bot, or call us.',
+    copy: 'Copy text', copied: 'Copied',
+    pricesTitle: 'Services and prices', pricesNote: 'Prices exclude VAT, in BCA (base calculation amount) on the contract date. Urgent work and trips outside the city by agreement.',
+    contacts: 'Contacts', cert: 'Certificate No. 0013 of 16.05.2024 · liability insured',
+    types: { flat: 'Flat', house: 'House', car: 'Car', nonres: 'Commercial', land: 'Land', biz: 'Business', other: 'Other' },
+    purposes: ['Bank collateral', 'Sale / purchase', 'Inheritance', 'Court', 'Tax', 'Balance sheet / IFRS', 'Damage', 'Other'],
+    pCar: 'Passenger car', pEquip: 'Equipment', pFlat: 'Flat', pSpec: 'Special machinery', pNonres: 'Commercial premises, building',
+    pLand: 'Land plot', pPlan: 'Business plan, feasibility study', pBiz: 'Business, shares, stakes',
+    bln: 'bn', mln: 'mln', sum: 'UZS', from: '', to: '–',
+    carMsg: 'Car price guide: {m} {mo}, {y}, {k} km',
+    flatMsg: 'Flat: {d} district, {a} m², {r} rooms. Guide {res}',
+  },
+};
+
+/* ---------- Telegram ---------- */
+const tg = window.Telegram && window.Telegram.WebApp;
+const inTelegram = !!(tg && tg.initData);
+if (tg) { try { tg.ready(); tg.expand(); if (tg.colorScheme) document.documentElement.setAttribute('data-theme', tg.colorScheme); } catch (e) {} }
+
+/* ---------- state ---------- */
+let lang = 'ru';
+try { lang = localStorage.getItem('zc-lang') || (tg && tg.initDataUnsafe && tg.initDataUnsafe.user && tg.initDataUnsafe.user.language_code === 'uz' ? 'uz' : 'ru'); } catch (e) {}
+if (!T[lang]) lang = 'ru';
+let objType = 'flat';
+let lastFlat = null;
+const $ = id => document.getElementById(id);
+const t = k => T[lang][k];
+const fill = (s, o) => s.replace(/\{(\w+)\}/g, (_, k) => o[k]);
+
+function money(v) {
+  const L = T[lang];
+  if (v >= 1e9) return (v / 1e9).toLocaleString('ru-RU', { maximumFractionDigits: 2 }) + ' ' + L.bln;
+  return Math.round(v / 1e6).toLocaleString('ru-RU') + ' ' + L.mln;
+}
+
+function render() {
+  document.documentElement.lang = lang;
+  document.querySelectorAll('[data-t]').forEach(el => { const v = t(el.dataset.t); if (typeof v === 'string') el.textContent = v; });
+  document.querySelectorAll('.langs button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === lang)));
+  const dSel = $('f-district'), keep = dSel.value;
+  dSel.innerHTML = DISTRICTS.map(d => `<option value="${d.id}">${d[lang]}</option>`).join('');
+  dSel.value = keep || 'chil';
+  const pSel = $('o-purpose'), pk = pSel.selectedIndex;
+  pSel.innerHTML = t('purposes').map((p, i) => `<option value="${i}">${p}</option>`).join('');
+  pSel.selectedIndex = pk > -1 ? pk : 0;
+  $('o-type').innerHTML = Object.entries(t('types')).map(([k, v]) => `<button type="button" data-type="${k}" aria-pressed="${k === objType}">${v}</button>`).join('');
+  $('p-list').innerHTML = PRICES.map(([k, v]) => `<div><span>${t(k)}</span><span>${lang === 'ru' ? v : v.replace('от ', '').replace('БРВ', lang === 'uz' ? 'BHM' : 'BCA').replace(/^/, lang === 'uz' ? '' : 'from ')}</span></div>`).join('');
+  if (lastFlat) calcFlat();
+  renderModels();
+  updateCarLink();
+}
+
+/* ---------- navigation ---------- */
+const VIEWS = ['home', 'flat', 'car', 'order', 'prices'];
+function go(v) {
+  VIEWS.forEach(n => { $('v-' + n).hidden = n !== v; });
+  window.scrollTo(0, 0);
+  if (tg && tg.BackButton) { try { v === 'home' ? tg.BackButton.hide() : tg.BackButton.show(); } catch (e) {} }
+}
+if (tg && tg.BackButton) { try { tg.BackButton.onClick(() => go('home')); } catch (e) {} }
+document.addEventListener('click', e => {
+  const g = e.target.closest('[data-go]'); if (g) { go(g.dataset.go); return; }
+  const l = e.target.closest('[data-lang]'); if (l) { lang = l.dataset.lang; try { localStorage.setItem('zc-lang', lang); } catch (err) {} render(); return; }
+  const ty = e.target.closest('[data-type]'); if (ty) { objType = ty.dataset.type; render(); }
+});
+
+/* ---------- flat ---------- */
+function calcFlat() {
+  const d = DISTRICTS.find(x => x.id === $('f-district').value);
+  const area = parseFloat($('f-area').value);
+  if (!d || !(area > 0)) return;
+  const perM2 = d.p * 1e6 * (1 - BARGAIN);
+  const mid = perM2 * area, lo = mid * (1 - SPREAD), hi = mid * (1 + SPREAD);
+  const res = `${money(lo)} – ${money(hi)} ${t('sum')}`;
+  lastFlat = { d: d[lang], a: area, r: $('f-rooms').value, res };
+  $('f-range').textContent = res;
+  $('f-per').textContent = fill(t('perM2'), { p: (perM2 / 1e6).toLocaleString('ru-RU', { maximumFractionDigits: 1 }) });
+  $('f-basis').textContent = fill(t(d.city ? 'basisCity' : 'basis'), { d: AS_OF, b: BARGAIN * 100, s: SPREAD * 100 });
+  const rooms = $('f-rooms').value;
+  /* раздел «Квартиры → Продажа» без фильтров */
+  /* Uybor: продажа, квартиры, Ташкент, число комнат (проверено 23.11.2026) */
+  $('f-olx').href = 'https://uybor.uz/listings?operationType__eq=sale&category__eq=7&region__eq=13&room__in=' + rooms;
+  $('f-result').hidden = false; $('f-after').hidden = false;
+}
+$('f-calc').addEventListener('click', () => { calcFlat(); try { tg && tg.HapticFeedback.impactOccurred('light'); } catch (e) {} });
+$('f-order').addEventListener('click', () => {
+  objType = 'flat'; render(); go('order');
+  if (lastFlat) $('o-comment').value = fill(T[lang].flatMsg, lastFlat);
+});
+
+/* ---------- car ---------- */
+/* Avtoelon: марка → модель (адреса моделей взяты с avtoelon.uz 23.11.2026) → год ±1 */
+const MODELS = {
+  chevrolet: [['cobalt','Cobalt'],['gentra','Gentra'],['spark','Spark'],['nexia3','Nexia 3'],['nexia2','Nexia 2'],['damas','Damas'],['matiz','Matiz'],['lacetti','Lacetti'],['onix','Onix'],['tracker-2','Tracker 2'],['tracker','Tracker'],['malibu2','Malibu 2'],['malibu','Malibu'],['captiva','Captiva'],['equinox','Equinox'],['tahoe','Tahoe'],['labo','Labo']],
+  byd: [['song-plus-dm-i','Song Plus DM-i'],['song-plus-ev','Song Plus EV'],['chazor','Chazor'],['yuan-up','Yuan UP'],['yuan-plus','Yuan Plus'],['han-ev','Han EV'],['seagull','Seagull'],['dolphin','Dolphin'],['seal','Seal'],['qin-l','Qin L'],['leopard-3','Leopard 3']],
+  kia: [['k-5','K5'],['sportage','Sportage'],['sorento','Sorento'],['seltos','Seltos'],['rio','Rio'],['cerato','Cerato'],['carnival','Carnival'],['sonet','Sonet'],['k8','K8'],['ev6','EV6']],
+  hyundai: [['elantra','Elantra'],['sonata','Sonata'],['tucson','Tucson'],['santa-fe','Santa Fe'],['creta','Creta'],['accent','Accent'],['palisade','Palisade'],['starex','Starex'],['porter','Porter'],['i30','i30']],
+  toyota: [['camry','Camry'],['corolla','Corolla'],['land-cruiser','Land Cruiser'],['land-cruiser-prado','Land Cruiser Prado'],['rav-4','RAV 4'],['highlander','Highlander'],['hilux','Hilux'],['yaris','Yaris'],['alphard','Alphard']],
+  vaz: [['lada-granta','Granta'],['vesta','Vesta'],['lada-r90','Largus'],['lada-priora','Priora'],['lada-kalina','Kalina'],['xray','XRAY'],['2107','2107'],['2106','2106'],['2121','Нива']],
+  daewoo: [['nexia','Nexia'],['nexia_2','Nexia II'],['matiz','Matiz'],['lacetti','Lacetti'],['gentra','Gentra'],['damas','Damas'],['spark','Spark'],['lanos','Lanos'],['tico','Tico']],
+  chery: [['tiggo-7-pro-max','Tiggo 7 Pro Max'],['tiggo-8-pro-max','Tiggo 8 Pro Max'],['tiggo-7-pro','Tiggo 7 Pro'],['tiggo-4-pro','Tiggo 4 Pro'],['tiggo-2','Tiggo 2'],['arrizo-8-hybrid','Arrizo 8 Hybrid']],
+};
+let carModel = 'cobalt';
+function modelLabel() { const m = (MODELS[$('c-make').value] || []).find(x => x[0] === carModel); return m ? m[1] : ''; }
+function renderModels() {
+  const list = MODELS[$('c-make').value] || [];
+  $('c-model-field').hidden = !list.length;
+  if (!list.some(x => x[0] === carModel)) carModel = '';
+  $('c-models').innerHTML = [['', t('allModels')], ...list].map(([slug, name]) =>
+    `<button type="button" data-model="${slug}" aria-pressed="${slug === carModel}">${name}</button>`).join('');
+}
+function updateCarLink() {
+  const make = $('c-make').value, y = parseInt($('c-year').value, 10);
+  let url = 'https://avtoelon.uz/avto/';
+  if (make !== 'other') { url += make + '/'; if (carModel) url += carModel + '/'; }
+  if (y > 1900 && y < 2100) url += '?year[from]=' + (y - 1) + '&year[to]=' + (y + 1);
+  $('c-olx').href = url;
+}
+$('c-models').addEventListener('click', e => {
+  const b = e.target.closest('[data-model]'); if (!b) return;
+  carModel = b.dataset.model; renderModels(); updateCarLink();
+});
+$('c-make').addEventListener('change', () => { carModel = ''; renderModels(); updateCarLink(); });
+$('c-year').addEventListener('input', updateCarLink);
+$('c-order').addEventListener('click', () => {
+  const mk = $('c-make'); objType = 'car'; render(); go('order');
+  $('o-comment').value = fill(T[lang].carMsg, { m: mk.options[mk.selectedIndex].text, mo: modelLabel(), y: $('c-year').value, k: $('c-km').value });
+});
+
+/* ---------- order ---------- */
+$('o-form').addEventListener('submit', e => {
+  e.preventDefault();
+  const name = $('o-name').value.trim(), phone = $('o-phone').value.trim(), err = $('o-err');
+  if (!name) { err.textContent = t('errName'); err.hidden = false; $('o-name').focus(); return; }
+  if (phone.replace(/\D/g, '').length < 9) { err.textContent = t('errPhone'); err.hidden = false; $('o-phone').focus(); return; }
+  err.hidden = true;
+  const lead = { kind: 'lead', lang, object: T.ru.types[objType], purpose: T.ru.purposes[$('o-purpose').value], name, phone, comment: $('o-comment').value.trim() };
+  let sent = false;
+  if (inTelegram && typeof tg.sendData === 'function') { try { tg.sendData(JSON.stringify(lead)); sent = true; } catch (x) { sent = false; } }
+  $('o-form').hidden = true;
+  if (sent) { $('o-done').hidden = false; return; }
+  $('o-copy').textContent = `Заявка ZeCost\nОбъект: ${T.ru.types[objType]}\nЦель: ${lead.purpose}\nИмя: ${name}\nТелефон: ${phone}` + (lead.comment ? `\n${lead.comment}` : '');
+  $('o-fallback').hidden = false;
+});
+$('o-copybtn').addEventListener('click', () => {
+  const txt = $('o-copy').textContent, btn = $('o-copybtn');
+  const done = () => { btn.textContent = t('copied'); };
+  try { navigator.clipboard.writeText(txt).then(done, () => selectCopy()); } catch (e) { selectCopy(); }
+  function selectCopy() { const r = document.createRange(); r.selectNodeContents($('o-copy')); const s = getSelection(); s.removeAllRanges(); s.addRange(r); }
+});
+
+render();
+calcFlat();   /* open with a worked example so the first screen shows what the calculator does */
+go('home');
+</script>
+</body></html>
